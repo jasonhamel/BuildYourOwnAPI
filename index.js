@@ -1,9 +1,9 @@
 import express from "express";
 import bodyParser from "body-parser";
+import "dotenv/config";
 
 const app = express();
 const port = 3000;
-const masterKey = "4VGP2DN-6EWM4SJ-N6FGRHV-Z3PR3TT";
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -12,9 +12,10 @@ app.get("/random", (req, res) => {
   const joke = Math.floor(Math.random() * jokes.length);
   res.json(jokes[joke]);
 });
+
 //2. GET a specific joke
 app.get("/jokes/:id", (req, res) => {
-  const jokeID = req.params.id.slice(1, req.params.id.length);
+  const jokeID = req.params.id.slice(1);
   if (jokeID > jokes.length - 1) {
     res.json({
       id:
@@ -26,6 +27,7 @@ app.get("/jokes/:id", (req, res) => {
 
   res.json(jokes[jokeID]);
 });
+
 //3. GET a jokes by filtering on the joke type
 app.get("/filter", (req, res) => {
   const type = req.query.type;
@@ -34,16 +36,69 @@ app.get("/filter", (req, res) => {
   );
   res.json(jokeList);
 });
+
 //4. POST a new joke
+app.post("/jokes", (req, res) => {
+  const joke = {
+    id: jokes.length + 1,
+    jokeText: req.body.text,
+    jokeType: req.body.type,
+  };
+  jokes.push(joke);
+  res.json(joke);
+});
 
 //5. PUT a joke
+app.put("/jokes/:id", (req, res) => {
+  if (req.params.id.slice(1) > jokes.length - 1) {
+    res.json({
+      id: "The ID is an invalid ID. Please try a number between 0 and 99",
+    });
+  }
+  const updatedJoke = {
+    id: req.params.id,
+    jokeText: req.body.text,
+    jokeType: req.body.type,
+  };
+  const searchIndex = jokes.findIndex((joke) => joke.id === id);
+  jokes[searchIndex] = updatedJoke;
+  res.json(updatedJoke);
+});
 
 //6. PATCH a joke
+app.patch("/jokes/:id", (req, res) => {
+  const id = parseInt(req.params.id.slice(1));
+  const currentJoke = jokes.find((joke) => joke.id === id);
+  const updatedJoke = {
+    id: id,
+    jokeText: req.body.text || currentJoke.jokeText,
+    jokeType: req.body.type || currentJoke.jokeType,
+  };
+  const searchIndex = jokes.findIndex((joke) => joke.id === id);
+  jokes[searchIndex] = updatedJoke;
+  res.json(updatedJoke);
+});
 
 //7. DELETE Specific joke
+app.delete("/jokes/:id", (req, res) => {
+  const id = parseInt(req.params.id.slice(1));
+  if (id > jokes.length - 1) {
+    res.status(404).json({ error: "No joke that that id." });
+  }
+
+  jokes.splice(jokes[id], 1);
+  res.sendStatus(200);
+});
 
 //8. DELETE All jokes
-
+app.delete("/all", (req, res) => {
+  if (req.query.key === process.env.MASTER_KEY) {
+    jokes = [];
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(403).json({ error: "Access foridden" });
+  }
+});
 app.listen(port, () => {
   console.log(`Successfully started server on port ${port}.`);
 });
