@@ -33,22 +33,77 @@ let posts = [
 ];
 
 let lastId = 3;
+let postType = "";
+let currentPostID;
 
 // Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static("public/"));
 
 //Write your code here//
 
 //CHALLENGE 1: GET All posts
+app.get("/", (req, res) => {
+  res.render("index.ejs", { posts: posts });
+});
 
 //CHALLENGE 2: GET a specific post by id
+app.get("/posts/:id", (req, res) => {
+  const id = req.params.id;
+  if (id > posts.length - 1) {
+    res.json("No post with that ID");
+  }
+  res.json(posts[id]);
+});
 
 //CHALLENGE 3: POST a new post
+app.get("/new", (req, res) => {
+  postType = req.route.path;
+  res.render("modify.ejs", { heading: "New Post", submit: "Post" });
+});
+
+app.post("/api/posts", (req, res) => {
+  let newPost = {};
+  if (postType == "/new") {
+    lastId++;
+    newPost = {
+      id: lastId,
+      title: req.body.title,
+      content: req.body.content,
+      author: req.body.author,
+      date: new Date(),
+    };
+    posts.push(newPost);
+  } else if (postType == "Update Post") {
+    const id = currentPostID;
+    newPost = {
+      id: id,
+      title: req.body.title,
+      content: req.body.content,
+      author: req.body.author,
+      date: new Date(),
+    };
+    posts[id - 1] = newPost;
+  }
+  res.redirect("/");
+});
 
 //CHALLENGE 4: PATCH a post when you just want to update one parameter
+app.get("/edit/:id", (req, res) => {
+  currentPostID = req.params.id;
+  postType = "Update Post";
+  res.render("modify.ejs", { heading: "Edit Post", submit: postType });
+});
+
+app.patch("/edit/:id", (req, res) => {});
 
 //CHALLENGE 5: DELETE a specific post by providing the post id.
+app.get("/api/posts/delete/:id", (req, res) => {
+  const id = req.body.id;
+  posts.splice(posts[id], 1);
+  res.redirect("/");
+});
 
 app.listen(port, () => {
   console.log(`API is running at http://localhost:${port}`);
